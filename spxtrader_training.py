@@ -77,18 +77,18 @@ def create_training_dataset(five_day_train_data, day_six_output_data, batch_size
 
 
 def filter_data(five_day_train_data, day_six_output_data):
-    filtered_five_day_train_data = []
-    filtered_day_six_output_data = []
+  filtered_five_day_train_data = []
+  filtered_day_six_output_data = []
     
-    for batch_index in range(len(five_day_train_data)):
-        if 0 in five_day_train_data[batch_index] or any(math.isnan(x) for x in five_day_train_data[batch_index])\
-                or 0 == day_six_output_data[batch_index] or math.isnan(day_six_output_data[batch_index]):
-            continue
-        
-        filtered_five_day_train_data.append(five_day_train_data[batch_index])
-        filtered_day_six_output_data.append(day_six_output_data[batch_index])
+  for batch_index in range(len(five_day_train_data)):
+    if 0 in five_day_train_data[batch_index] or any(math.isnan(x) for x in five_day_train_data[batch_index])\
+      or 0 == day_six_output_data[batch_index] or math.isnan(day_six_output_data[batch_index]):
+      continue
+      
+    filtered_five_day_train_data.append(five_day_train_data[batch_index])
+    filtered_day_six_output_data.append(day_six_output_data[batch_index])
     
-    return filtered_five_day_train_data, filtered_day_six_output_data
+  return filtered_five_day_train_data, filtered_day_six_output_data
 
 def main():
     spx_components_url = "https://datahub.io/core/s-and-p-500-companies/r/constituents.csv"
@@ -109,13 +109,13 @@ def main():
    
     #RNN model
     stock_prediction_model = tf.keras.Sequential([
-        tf.keras.layers.LSTM(128, return_sequences=True, input_shape=(TIME_STEPS, 1)),
-        tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.LSTM(128, return_sequences=True),
-        tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.LSTM(64),
-        tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.Dense(1)
+      tf.keras.layers.LSTM(128, return_sequences=True, input_shape=(TIME_STEPS, 1)),
+      tf.keras.layers.Dropout(0.2),
+      tf.keras.layers.LSTM(128, return_sequences=True),
+      tf.keras.layers.Dropout(0.2),
+      tf.keras.layers.LSTM(64),
+      tf.keras.layers.Dropout(0.2),
+      tf.keras.layers.Dense(1)
     ])
     #compile the model
     stock_prediction_model.compile(optimizer='adam', loss='mean_absolute_error')
@@ -133,4 +133,3 @@ def main():
    
 if __name__ == "__main__":
     main()
-    
