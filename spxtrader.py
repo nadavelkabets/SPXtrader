@@ -1,6 +1,7 @@
 import pandas as pd
 import tensorflow as tf
 import datetime
+import numpy as np
 
 INTRO_SCREEN_TEXT = """
      _______..______   ___   ___ .___________..______          ___       _______   _______ .______      
@@ -10,7 +11,6 @@ INTRO_SCREEN_TEXT = """
 .----)   |   |  |       /  .  \      |  |     |  |\  \----./  _____  \  |  '--'  ||  |____ |  |\  \----.
 |_______/    | _|      /__/ \__\     |__|     | _| `._____/__/     \__\ |_______/ |_______|| _| `._____|
 """
-
 
 class Stock:
     def __init__(self, stock_id):
@@ -33,7 +33,6 @@ class Stock:
             print("Invalid stock id")
             exit()
 
-
 def get_epoch_time():
     """
     Calculates the start and end periods for fetching stock data from Yahoo Finance API.
@@ -42,7 +41,6 @@ def get_epoch_time():
     start_period = int((datetime.datetime.now() - datetime.timedelta(days=8)).timestamp())
     end_period = int((datetime.datetime.now() - datetime.timedelta(days=1)).timestamp())
     return start_period, end_period
-
 
 def predict_stocks(stocks_map, prediction_model):
     """
@@ -53,26 +51,23 @@ def predict_stocks(stocks_map, prediction_model):
 
     for stock in stocks_map:  # Iterate over each stock in the stocks_map list
         # Calculate the price change ratio for each stock
-        stock.data['Ratio'] = stock.data['Close'] / stock.data['Open']
-        stock.price_changes = stock.data['Ratio'].tolist()  # Convert the price change ratios to a list
+        stock.data['Ratio'] = (stock.data['Close'] / stock.data['Open']) - 1
+        stock.price_changes = np.reshape(stock.data['Ratio'].values, (-1, 1))
         stock.prediction = prediction_model.predict(stock.price_changes)  # Predict the stock's price changes using the prediction model
 
         # Get the last prediction value
         last_prediction = stock.prediction[-1][0]  # Retrieve the last predicted value from the stock's prediction
-        if last_prediction > best_stock.prediction:  # Check if the last prediction is greater than the best_stock's prediction
+        if last_prediction > best_stock.prediction[-1][0]:  # Check if the last prediction is greater than the best_stock's prediction
             best_stock = stock  # Update the best_stock variable if the current stock has a higher prediction
 
     return best_stock  # Return the stock with the highest prediction value as the best stock
-
-
 
 def print_predictions(stocks_map):
     """
     Prints the predictions for each stock in the stocks_map.
     """
     for stock in stocks_map:
-        print(f"{stock.id}: {stock.prediction * 10000}%")
-
+        print(f"{stock.id}: {stock.prediction}%")
 
 def get_user_stocks():
     """
@@ -91,8 +86,8 @@ def main():
     """
     Main function for running the stock prediction program.
     """
-    model_location = "/home/ubuntu/Documents/projects/spxrnnv2"  # Change this to the actual model location
-    prediction_model = tf.keras.models.load_model(model_location)  # Load the prediction model from the specified location
+    model_location = "/home/ubuntu/Documents/projects/spxrnnv2.h5"
+    prediction_model = tf.keras.models.load_model(model_location)
     stocks_map = []  # Create an empty list to store stock instances
 
     print(INTRO_SCREEN_TEXT)  # Print the intro screen text
@@ -109,8 +104,6 @@ def main():
 
     # Print predictions
     print(f"Best stock to buy: {best_stock.id}")  # Print the ID of the best stock to buy
-    print_predictions(stocks_map)  # Call a function to print the predictions for all stocks in the stocks_map list
-
 
 if __name__ == "__main__":
     main()
