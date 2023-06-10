@@ -77,59 +77,57 @@ def create_training_dataset(five_day_train_data, day_six_output_data, batch_size
 
 
 def filter_data(five_day_train_data, day_six_output_data):
-  filtered_five_day_train_data = []
-  filtered_day_six_output_data = []
+    filtered_five_day_train_data = []
+    filtered_day_six_output_data = []
     
-  for batch_index in range(len(five_day_train_data)):
-    if 0 in five_day_train_data[batch_index] or any(math.isnan(x) for x in five_day_train_data[batch_index])\
-      or 0 == day_six_output_data[batch_index] or math.isnan(day_six_output_data[batch_index]):
-      continue
-      
-    filtered_five_day_train_data.append(five_day_train_data[batch_index])
-    filtered_day_six_output_data.append(day_six_output_data[batch_index])
+    for batch_index in range(len(five_day_train_data)):
+        if 0 in five_day_train_data[batch_index] or any(math.isnan(x) for x in five_day_train_data[batch_index])\
+                or 0 == day_six_output_data[batch_index] or math.isnan(day_six_output_data[batch_index]):
+            continue
+        
+        filtered_five_day_train_data.append(five_day_train_data[batch_index])
+        filtered_day_six_output_data.append(day_six_output_data[batch_index])
     
-  return filtered_five_day_train_data, filtered_day_six_output_data
+    return filtered_five_day_train_data, filtered_day_six_output_data
 
 def main():
     spx_components_url = "https://datahub.io/core/s-and-p-500-companies/r/constituents.csv"
     spx_components_table = pd.read_csv(spx_components_url)
     spx_stock_names = spx_components_table["Symbol"].tolist()
-    
+
     #get stock data
     stocks_map = get_stocks(spx_stock_names)
+
     #process data
     stock_prices = process_stocks_data(stocks_map)
-    #split data to batches
+    #split data to batches and filter errors (0s and NaNs)
     five_day_train_data, day_six_output_data = create_training_data(stock_prices)
-    #filter NaN and 0s in the dataset
     five_day_train_data, day_six_output_data = filter_data(five_day_train_data, day_six_output_data)
     #create training dataset
     batch_size = 5
     shuffled_five_day_train_data, shuffled_day_six_output_data = create_training_dataset(five_day_train_data, day_six_output_data, batch_size)
-   
+
+    print(shuffled_five_day_train_data)
+
     #RNN model
     stock_prediction_model = tf.keras.Sequential([
-      tf.keras.layers.LSTM(128, return_sequences=True, input_shape=(TIME_STEPS, 1)),
-      tf.keras.layers.Dropout(0.2),
-      tf.keras.layers.LSTM(128, return_sequences=True),
-      tf.keras.layers.Dropout(0.2),
-      tf.keras.layers.LSTM(64),
-      tf.keras.layers.Dropout(0.2),
-      tf.keras.layers.Dense(1)
+        tf.keras.layers.LSTM(128, return_sequences=True, input_shape=(shuffled_five_day_train_data.shape[1], shuffled_five_day_train_data.shape[2])),
+        tf.keras.layers.Dropout(0.2),
+        tf.keras.layers.LSTM(128, return_sequences=True),
+        tf.keras.layers.Dropout(0.2),
+        tf.keras.layers.LSTM(64),
+        tf.keras.layers.Dropout(0.2),
+        tf.keras.layers.Dense(1)
     ])
-    #compile the model
+
+    # Compile the model
     stock_prediction_model.compile(optimizer='adam', loss='mean_absolute_error')
-    #train with GPU
-    device_name = tf.test.gpu_device_name()
-    if device_name != '/device:GPU:0':
-      raise SystemError('GPU device not found')
-    print('Found GPU at: {}'.format(device_name))
-    #train model
+
     epoch_count = 10
     with tf.device('/GPU:0'):
       stock_prediction_model.fit(shuffled_five_day_train_data, shuffled_day_six_output_data, epochs=epoch_count)
-    #save model
-    stock_prediction_model.save("stock_prediction_model")
-   
+
+    stock_prediction_model.save('spxrnnv2.h5')
+
 if __name__ == "__main__":
-    main()
+    main(
